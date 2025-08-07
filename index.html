@@ -4,8 +4,155 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Fall</title>
+    <script src="matter.js"></script>
 </head>
 <body>
-    <h1>Hello World</h1>
+<div id="ui">
+    <input type="text" id="textInput" placeholder="質問を入力してください"/>
+    <button onclick="dropText()">送信</button>
+</div>
+<canvas id="canvas"></canvas>
+<script>
+    const { Engine, Runner, Bodies, Composite } = Matter;
+
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    const engine = Engine.create();
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    const ground = Bodies.rectangle(width / 2, height - 20, width, 40, {
+        isStatic: true
+    });
+    Composite.add(engine.world, ground);
+
+    const text = "a";
+    const fontSize = 30;
+    const charWidth = fontSize;
+    const startX = 100;
+    const startY = -50;
+
+    [...text].forEach((char, index) => {
+        const x = startX + index * (charWidth + 10);
+        const body = Bodies.rectangle(x, startY, charWidth, fontSize, {
+        restitution: 0.3,
+        friction: 0.1
+        });
+
+        // 組み込まれたrender用のtext設定
+        body.render.text = {
+        content: char,
+        size: fontSize,
+        color: '#000000',
+        family: 'sans-serif'
+        };
+
+        Composite.add(engine.world, body);
+    });
+
+function render() {
+    const bodies = Composite.allBodies(engine.world);
+
+    context.fillStyle = '#FFFFFF'; // 背景
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.globalAlpha = 1;
+    context.beginPath();
+
+    for (let i = 0; i < bodies.length; i++) {
+      const part = bodies[i];
+
+      if (part.render.text) {
+        const textData = part.render.text;
+        let fontsize = textData.size || 30;
+        let fontfamily = textData.family || 'Arial';
+        let color = textData.color || '#FF0000';
+        let content = textData.content || '';
+
+        context.save();
+        context.translate(part.position.x, part.position.y);
+        context.rotate(part.angle);
+        context.textBaseline = 'middle';
+        context.textAlign = 'center';
+        context.fillStyle = color;
+        context.font = fontsize + 'px ' + fontfamily;
+        context.fillText(content, 0, 0);
+        context.restore();
+      }
+
+      const vertices = part.vertices;
+      context.moveTo(vertices[0].x, vertices[0].y);
+    //   for (let j = 1; j < vertices.length; j++) {
+    //     context.lineTo(vertices[j].x, vertices[j].y);
+    //   }
+    //   context.lineTo(vertices[0].x, vertices[0].y);
+    }
+
+    context.lineWidth = 1.5;
+    context.strokeStyle = '#000000';
+    context.stroke();
+
+    window.requestAnimationFrame(render);
+}
+
+  render(); // 描画開始
+
+  function dropText() {
+    const input = document.getElementById('textInput');
+    const text = input.value.trim();
+    if (text === '') {
+        return;
+    }
+
+    const fontSize = 30;
+    const charWidth = fontSize;
+    const startX = Math.random() * (width - text.length * (charWidth + 10));
+    const startY = -50;
+
+    console.log(text);
+
+    [...text].forEach((char, index) => {
+        setTimeout(() => {
+            const x = startX + index * (charWidth + 5);
+            const body = Bodies.rectangle(x, startY, charWidth, fontSize, {
+                restitution: 0.3,
+                friction: 0.1
+            });
+            body.render.text = {
+                content: char,
+                size: fontSize,
+                color: '#000',
+                family: 'sans-serif'
+            };
+            Composite.add(engine.world, body);
+        }, index * 100); // 時間差で1文字ずつ
+    });
+
+    input.value = ''; // 入力フィールドをクリア
+  }
+
+  document.getElementById('textInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      dropText();
+    }
+  });
+</script>
+<style>
+body { margin: 0; overflow: hidden; background-color: #fff; }
+canvas { display: block; }
+#ui {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 8px;
+}
+</style>
 </body>
 </html>
